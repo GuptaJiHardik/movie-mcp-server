@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented on `feature/profile-read` and awaiting delivery.
+Phase 1 core infrastructure and Phase 2 profile reads are complete. The next capability is diary reads.
 
 ## Completed functionality
 
@@ -80,4 +80,4 @@ Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented o
 
 ## Next implementation step
 
-Deliver `feature/profile-read` through its pull request, then implement diary reads on `feature/diary-read` from synchronized `main`.
+Implement the diary model, parser, pagination, repositories, and service path on `feature/diary-read` from synchronized `main`.
