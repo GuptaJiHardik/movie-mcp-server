@@ -4,7 +4,7 @@
 
 This document is the durable implementation roadmap and progress record for the Letterboxd MCP server. Update it after every completed feature so a future session can determine what is finished, what was verified, and what comes next.
 
-The project will deliver the complete read-only roadmap using Python 3.12+, FastMCP 4+, `requests`, BeautifulSoup, Pydantic, and SQLite. Work is delivered as stacked `feature/<short-name>` branches. Every completed feature must also update `CODEX.md`, pass its required checks, be committed, and be pushed according to `.codex/skills/github_skill.md`.
+The project will deliver the complete read-only roadmap using Python 3.12+, FastMCP 4+, `requests`, BeautifulSoup, Pydantic, and SQLite. Each feature starts from synchronized `main` and is delivered through a `feature/<short-name>` branch and pull request. Every completed feature must also update `CODEX.md`, pass its required checks, be committed, pushed, and merged according to `.codex/skills/github_skill.md`.
 
 ## Status Legend
 
@@ -205,20 +205,22 @@ search_cached_movies(query: str, limit: int = 20)
 
 ## Git and Documentation Workflow
 
-Branches are intentionally stacked. The first feature branch starts from the current unborn `master`; every later branch starts from the immediately preceding completed feature branch. Merge them oldest to newest.
+Each feature begins only after fetching the remote and fast-forwarding local `main` to `origin/main`. Create its branch from that synchronized base, then complete the feature through a pull request before starting the next feature.
 
 For every feature:
 
-1. Create and switch to its planned `feature/<short-name>` branch.
-2. Implement only that feature and its tests.
-3. Run focused checks and the complete offline suite.
-4. Update `CODEX.md` with completed behavior, files changed, design decisions, tests and results, current limitations, and the next feature.
-5. Update the Progress Ledger in this file.
-6. Review `git status` and the diff, then stage only relevant files.
-7. Commit with a concise imperative message.
-8. Verify `origin` is `https://github.com/GuptaJiHardik/movie-mcp-server`; add it only when absent and stop if an existing URL conflicts.
+1. Verify `origin`, fetch it, switch to local `main`, and run `git pull --ff-only origin main` with a clean worktree.
+2. Create and switch to the planned `feature/<short-name>` branch from `origin/main`.
+3. Implement only that feature and its tests.
+4. Run focused checks and the complete offline suite.
+5. Update `CODEX.md` with completed behavior, files changed, design decisions, tests and results, current limitations, and the next feature.
+6. Update the Progress Ledger in this file.
+7. Review status and diff, then commit only relevant files with a concise imperative message.
+8. Fetch again, incorporate any new `origin/main` commits, and rerun tests before pushing.
 9. Push using `git push -u origin feature/<short-name>`.
-10. Record the commit hash, test result, and push result in the Progress Ledger.
+10. Create a pull request into `main`, verify mergeability and required checks, and squash-merge it without bypassing protections.
+11. Fetch and fast-forward local `main` to the merged `origin/main`.
+12. Record the commit, tests, pull request, merge result, and updated `main` revision in the Progress Ledger.
 
 Never commit secrets, local databases, caches, or unrelated user work. Never force-push. If authentication, remote conflicts, failing tests, or branch protection prevents completion, preserve the local work, mark the feature blocked, and record the exact blocker.
 
@@ -226,6 +228,6 @@ Never commit secrets, local databases, caches, or unrelated user work. Never for
 
 - The roadmap covers the MVP, all post-MVP public read tools, cached search, and release hardening.
 - Python 3.12 is the minimum supported version even though the generated stub initially specified 3.14.
-- Work proceeds through stacked branches without waiting for each predecessor to merge.
+- Each feature is merged into `main` before the next feature branch is created.
 - The server remains local, stdio-based, unauthenticated, and strictly read-only.
 - Exact optional fields for previously unvalidated pages will be finalized from live page evidence while preserving the common normalization and error rules.
