@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 SQLite storage is implemented. The next milestone is the HTTP client.
+Phase 1 HTTP client is implemented. After its feature PR merges, Phase 1 is complete and the next milestone is profile reads.
 
 ## Completed functionality
 
@@ -16,6 +16,8 @@ Phase 1 SQLite storage is implemented. The next milestone is the HTTP client.
 - Added idempotent SQLite initialization with all planned MVP and post-MVP tables and indexes.
 - Added safe connection and transaction lifecycle handling with commit, rollback, and structured database errors.
 - Added cache-state timestamp persistence with stable-identity UPSERT and UTC normalization.
+- Added a reusable Letterboxd HTTP client with explicit headers/timeouts and bounded retry behavior.
+- Added challenge-page and cross-origin redirect detection without CAPTCHA bypass behavior.
 
 ## Files changed
 
@@ -25,6 +27,7 @@ Phase 1 SQLite storage is implemented. The next milestone is the HTTP client.
 - Added `README.md`, this context file, the product specification, and Codex workflow documentation.
 - Added `config.py`, `errors.py`, and focused configuration/error tests.
 - Added the packaged SQLite schema, database adapter, cache-state repository, and isolated database tests.
+- Added `client.py` and deterministic HTTP tests for success, retries, failures, encoding, URL safety, and session lifecycle.
 
 ## Key design decisions
 
@@ -39,6 +42,9 @@ Phase 1 SQLite storage is implemented. The next milestone is the HTTP client.
 - SQLite connections enable foreign keys and a five-second busy timeout.
 - Repository timestamps are stored as ISO 8601 UTC values and exposed as timezone-aware `datetime` objects.
 - Resource-specific repositories remain with their profile, diary, and later capability branches.
+- HTTP retries cover connection timeouts and transient 429/5xx responses with exponential backoff.
+- Numeric `Retry-After` values are honored with a 60-second upper bound.
+- The client accepts only the configured origin, closes every response, returns decoded HTML, and performs no parsing.
 
 ## Tests executed
 
@@ -51,12 +57,14 @@ Phase 1 SQLite storage is implemented. The next milestone is the HTTP client.
 - `uv run pytest` — passed, 28 tests after SQLite implementation.
 - `uv build` — passed; wheel and source distribution were produced.
 - Wheel inspection — confirmed `letterboxd_mcp/database/schema.sql` is packaged.
+- `uv run pytest` — passed, 44 tests after HTTP client implementation.
+- `uv build` — passed with both `client.py` and `database/schema.sql` present in the wheel.
 
 ## Current limitations
 
-- No Letterboxd HTTP client, page parsers, resource repositories, service, or MCP tools exist yet.
+- No page parsers, resource repositories, service, or MCP tools exist yet.
 - The console command only confirms successful installation.
 
 ## Next implementation step
 
-Implement the reusable, polite Letterboxd HTTP client on `feature/http-client`.
+Implement the profile model, parser, repository, and service path on `feature/profile-read`.
