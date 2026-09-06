@@ -62,6 +62,18 @@ class Database:
         with self.connection() as connection:
             try:
                 connection.executescript(schema)
+                review_columns = {
+                    row["name"]
+                    for row in connection.execute("PRAGMA table_info(reviews)")
+                }
+                if "contains_spoilers" not in review_columns:
+                    connection.execute(
+                        """
+                        ALTER TABLE reviews
+                        ADD COLUMN contains_spoilers INTEGER NOT NULL DEFAULT 0
+                        CHECK (contains_spoilers IN (0, 1))
+                        """
+                    )
                 connection.commit()
             except sqlite3.Error as error:
                 connection.rollback()

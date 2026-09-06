@@ -8,21 +8,32 @@ from letterboxd_mcp.database import Database
 from letterboxd_mcp.database.repositories import (
     CacheStateRepository,
     DiaryEntryRepository,
+    FilmDetailsRepository,
     FilmRepository,
     ProfileRepository,
+    ReviewRepository,
+    UserFilmRepository,
 )
 from letterboxd_mcp.service import LetterboxdService
-from letterboxd_mcp.tools import register_diary_tool, register_profile_tool
+from letterboxd_mcp.tools import (
+    register_diary_tool,
+    register_film_tool,
+    register_profile_tool,
+)
 
 
 def create_mcp(service: LetterboxdService) -> FastMCP:
     """Create the MCP server around an injected application service."""
     mcp = FastMCP(
         "Letterboxd MCP",
-        instructions="Read-only access to public Letterboxd profiles and diaries.",
+        instructions=(
+            "Read-only access to public Letterboxd profiles, diaries, "
+            "and enriched watched films."
+        ),
     )
     register_profile_tool(mcp, service)
     register_diary_tool(mcp, service)
+    register_film_tool(mcp, service)
     return mcp
 
 
@@ -38,6 +49,9 @@ def main() -> None:
         film_repository=FilmRepository(database),
         diary_repository=DiaryEntryRepository(database),
         cache_repository=CacheStateRepository(database),
+        user_film_repository=UserFilmRepository(database),
+        film_details_repository=FilmDetailsRepository(database),
+        review_repository=ReviewRepository(database),
     )
     mcp = create_mcp(service)
     try:

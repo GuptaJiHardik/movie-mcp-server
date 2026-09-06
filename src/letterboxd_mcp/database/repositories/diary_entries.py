@@ -44,6 +44,33 @@ class DiaryEntryRepository:
         with self.database.transaction() as connection:
             _upsert_many(connection, entries)
 
+    def list_for_user_films(
+        self,
+        username: str,
+        film_slugs: list[str],
+    ) -> list[DiaryEntry]:
+        """Return every cached viewing for a bounded set of films."""
+        if not film_slugs:
+            return []
+        placeholders = ",".join("?" for _ in film_slugs)
+        with self.database.connection() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT d.id, d.username, d.watched_date, d.rating, d.rewatch,
+                       d.liked, d.review_url, d.fetched_at,
+                       f.slug AS film_slug, f.title AS film_title,
+                       f.year AS film_year, f.url AS film_url,
+                       f.poster_url AS film_poster_url,
+                       f.fetched_at AS film_fetched_at
+                FROM diary_entries AS d
+                JOIN films AS f ON f.slug = d.film_slug
+                WHERE d.username = ? AND d.film_slug IN ({placeholders})
+                ORDER BY d.watched_date DESC, d.id DESC
+                """,
+                (username, *film_slugs),
+            ).fetchall()
+        return [_entry_from_row(row) for row in rows]
+
     def replace_for_user(
         self,
         username: str,

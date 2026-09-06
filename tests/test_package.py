@@ -35,7 +35,11 @@ def test_mcp_registers_only_mvp_tools() -> None:
 
     tools = asyncio.run(mcp.list_tools())
 
-    assert {tool.name for tool in tools} == {"get_profile", "get_diary"}
+    assert {tool.name for tool in tools} == {
+        "get_profile",
+        "get_diary",
+        "get_films",
+    }
 
 
 def test_module_entry_point() -> None:

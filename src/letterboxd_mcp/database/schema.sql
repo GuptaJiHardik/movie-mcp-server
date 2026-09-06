@@ -41,8 +41,58 @@ CREATE TABLE IF NOT EXISTS reviews (
     reviewed_date TEXT,
     rating REAL CHECK (rating IS NULL OR (rating >= 0.5 AND rating <= 5.0)),
     liked INTEGER CHECK (liked IS NULL OR liked IN (0, 1)),
+    contains_spoilers INTEGER NOT NULL DEFAULT 0 CHECK (contains_spoilers IN (0, 1)),
     review_text TEXT,
     fetched_at TEXT NOT NULL,
+    FOREIGN KEY (film_slug) REFERENCES films(slug) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS user_films (
+    username TEXT NOT NULL COLLATE NOCASE,
+    film_slug TEXT NOT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    rating REAL CHECK (rating IS NULL OR (rating >= 0.5 AND rating <= 5.0)),
+    liked INTEGER NOT NULL DEFAULT 0 CHECK (liked IN (0, 1)),
+    review_url TEXT,
+    fetched_at TEXT NOT NULL,
+    PRIMARY KEY (username, film_slug),
+    FOREIGN KEY (film_slug) REFERENCES films(slug) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS film_details (
+    film_slug TEXT PRIMARY KEY,
+    original_title TEXT,
+    tagline TEXT,
+    synopsis TEXT,
+    runtime_minutes INTEGER CHECK (runtime_minutes IS NULL OR runtime_minutes > 0),
+    average_rating REAL CHECK (average_rating IS NULL OR (average_rating >= 0.5 AND average_rating <= 5.0)),
+    fetched_at TEXT NOT NULL,
+    FOREIGN KEY (film_slug) REFERENCES films(slug) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS film_directors (
+    film_slug TEXT NOT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    name TEXT NOT NULL,
+    PRIMARY KEY (film_slug, position),
+    FOREIGN KEY (film_slug) REFERENCES films(slug) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS film_cast (
+    film_slug TEXT NOT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    name TEXT NOT NULL,
+    role TEXT,
+    url TEXT,
+    PRIMARY KEY (film_slug, position),
+    FOREIGN KEY (film_slug) REFERENCES films(slug) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS film_genres (
+    film_slug TEXT NOT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    name TEXT NOT NULL,
+    PRIMARY KEY (film_slug, position),
     FOREIGN KEY (film_slug) REFERENCES films(slug) ON DELETE CASCADE
 );
 
@@ -91,6 +141,10 @@ CREATE INDEX IF NOT EXISTS idx_diary_entries_username_film_slug
     ON diary_entries(username, film_slug);
 CREATE INDEX IF NOT EXISTS idx_reviews_username
     ON reviews(username);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reviews_review_url
+    ON reviews(review_url);
+CREATE INDEX IF NOT EXISTS idx_user_films_username_position
+    ON user_films(username, position);
 CREATE INDEX IF NOT EXISTS idx_watchlist_username
     ON watchlist(username);
 CREATE INDEX IF NOT EXISTS idx_films_title

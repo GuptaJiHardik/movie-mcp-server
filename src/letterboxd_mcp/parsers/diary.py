@@ -37,6 +37,8 @@ def parse_diary_page(
     soup = BeautifulSoup(html, "html.parser")
     table = soup.select_one("table#diary-table.diary-table")
     if table is None:
+        if soup.select_one(".profile-header[data-person]") is not None:
+            return ParsedDiaryPage(entries=(), next_path=None)
         raise ParseError("diary", "missing diary table", url=url)
 
     entries = tuple(
