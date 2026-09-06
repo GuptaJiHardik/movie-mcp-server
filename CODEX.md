@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diary reads are implemented on `feature/diary-read` and awaiting delivery.
+The three-tool read-only MVP is implemented and verified offline on `feature/mvp-completion`. Git delivery remains; a full live `get_films` smoke is externally challenge-blocked.
 
 ## Completed functionality
 
@@ -26,6 +26,16 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diar
 - Added strict diary parsing for watched dates, ratings, likes, rewatches, reviews, optional metadata, and the site's real next-page link.
 - Added film and diary-entry repositories with stable UPSERTs and joined diary reads.
 - Added `LetterboxdService.get_diary` with positive limits, early pagination stopping, loop detection, persistence, and structured 404 translation.
+- Added profile and diary freshness decisions backed by persisted cache-state timestamps.
+- Added incomplete-diary coverage handling and a `diary_complete` marker for real final pages.
+- Added forced live refresh behavior through `refresh=True`.
+- Added the local FastMCP stdio runtime with the read-only `get_profile`, `get_diary`, and `get_films` tools.
+- Added typed tool-boundary validation and structured Pydantic serialization.
+- Added full newest-added watched-collection synchronization and full public diary synchronization for enriched film reads.
+- Added bounded `get_films` limit/offset pagination with unique titles and nested repeat viewings.
+- Added film-detail parsing for original title, tagline, synopsis, runtime, directors, genres, top-ten cast, and aggregate rating.
+- Added profile-review parsing for full text, date, rating, like, and spoiler state.
+- Added migration-safe user-film, detail, director, genre, and cast persistence plus review-table migration.
 
 ## Files changed
 
@@ -38,12 +48,13 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diar
 - Added `client.py` and deterministic HTTP tests for success, retries, failures, encoding, URL safety, and session lifecycle.
 - Added the profile model, parser, repository, service, offline fixtures, and focused tests.
 - Added diary and film models, the diary parser, film/diary repositories, and paginated service integration without permanent diary test files.
+- Added watched-film/detail/review models, parsers, repositories, MCP adapter, offline fixtures, and focused integration tests.
 
 ## Key design decisions
 
 - Python 3.12 is the minimum supported runtime.
 - The existing `src/letterboxd_mcp` package is the application root.
-- The console entry point remains lightweight until the FastMCP runtime feature is implemented.
+- The console and module entry points start the FastMCP stdio runtime.
 - Scraping, persistence, models, and tools have separate package boundaries from the beginning.
 - Settings can be constructed from an explicit mapping so tests do not depend on process-global environment state.
 - Environment variables use the `LETTERBOXD_MCP_` prefix and invalid numeric or unsafe values fail early.
@@ -57,11 +68,16 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diar
 - The client accepts only the configured origin, closes every response, returns decoded HTML, and performs no parsing.
 - Profile selectors remain isolated in the profile parser; SQL remains isolated in the profile repository.
 - Missing bio, avatar, and counts remain `None`; a missing profile boundary or display name raises `ParseError`.
-- Profile reads currently fetch on every call while accepting `refresh` for forward-compatible API stability; cache freshness remains a separate feature.
+- Fresh profile cache entries are reused for 30 minutes by default; `refresh=True` bypasses freshness.
 - Diary rows use viewing IDs as stable identities and expose their associated film as nested structured data.
 - Diary pagination follows `.pagination a.next` and stops as soon as the requested limit is collected.
 - Sparse diary film data does not overwrite richer cached film years or poster URLs with `None`.
-- Diary reads accept `refresh` for API stability but always fetch until cache freshness is implemented.
+- Fresh diary cache entries are reused for 10 minutes by default when they cover the requested limit or carry a matching completion marker.
+- Partial diary refreshes replace the cached snapshot and clear completion state; larger later requests fetch enough public pages again.
+- MCP adapters contain validation and registration only; all cache, HTTP, parsing, and persistence work remains in the layers below them.
+- Watched titles are unique and ordered newest-added; dated diary logs are nested instead of duplicating heavyweight film metadata.
+- `get_films` defaults to 10 items and caps responses at 20; collection/review data uses a 10-minute TTL and generic details use 24 hours.
+- `refresh=True` for `get_films` refreshes both complete user snapshots and every detail/review in the requested window.
 
 ## Tests executed
 
@@ -85,13 +101,22 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diar
 - Temporary offline edge-case validation covered rated, unrated, sparse, liked, rewatch, review, empty, malformed, and repository round-trip behavior; the check file was deleted afterward.
 - A focused live selector check confirmed unliked and liked states as `False` and `True`, with ratings normalized to `3.0` and `4.5`.
 - `uv build` — passed; diary/film models, repositories, parser, and service are present in the wheel.
+- `uv run pytest -q` — passed, 60 tests after updating entry-point coverage for the stdio runtime.
+- Disposable temporary-database verification — passed for clean SQLite initialization, profile cache hit/stale/forced refresh, partial and complete diary cache behavior, larger-limit refetching, both in-memory MCP tool calls, typed serialization, and MCP error propagation; the script was removed afterward.
+- Live watched, film-detail, and review selector inspection — passed against current public Letterboxd markup.
+- `uv run pytest -q` — passed, 72 tests after watched-film parser, repository, migration, empty-diary, service, cache, and MCP coverage.
+- `uv build` — passed; the source distribution and wheel include the three-tool MVP.
+- Five opt-in `get_films` smoke attempts, including one with the supported custom User-Agent setting, were stopped by HTTP 200/403 Letterboxd challenge responses during collection pagination; the challenge detector behaved correctly and no bypass was attempted.
 
 ## Current limitations
 
-- Cache freshness and MCP tools do not exist yet.
-- Profile and diary reads always fetch until the dedicated cache/refresh feature is implemented.
-- The console command only confirms successful installation.
+- Only public Letterboxd profile, diary, watched-film, film-detail, and profile-review reads are supported.
+- `get_films` performs full collection and diary synchronization when stale, so its first call can be slow for large profiles.
+- Community reviews and metadata beyond the documented core film fields are not returned.
+- Letterboxd challenge pages are surfaced as errors; the project does not attempt CAPTCHA or anti-bot bypasses.
+- The scraper depends on current public page markup and may require parser maintenance when Letterboxd changes it.
+- No authentication, private data, write operations, browser automation, or remote hosting is included.
 
 ## Next implementation step
 
-Deliver `feature/diary-read` through its pull request, then implement cache freshness and forced refresh on `feature/cache-refresh`.
+Commit documentation and deliver `feature/mvp-completion` through its pull request. The full live `get_films` smoke remains blocked by Letterboxd challenge responses; do not bypass them. Stop before adding post-MVP resources unless the user explicitly requests them.
