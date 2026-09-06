@@ -22,8 +22,8 @@ Update the Status, Branch/Commit, Tests, and Notes columns when each feature cha
 | 0 | Project foundation | Complete | PR `#1` / `main` `fff3eb9` | 3 tests passed; CLI passed | Merged into `main` after history reconciliation |
 | 1 | Configuration and errors | Complete | PR `#2` / `8808140` | 17 tests passed | Delivered through feature PR |
 | 1 | SQLite storage | Complete | PR `#3` / `82eb450` | 28 tests passed; build passed | Delivered through feature PR |
-| 1 | HTTP client | Not started | `feature/http-client` | Pending | Next feature |
-| 2 | Profile read | Not started | `feature/profile-read` | Pending | |
+| 1 | HTTP client | Complete | PR `#4` / `5271f57` | 44 tests passed; build passed | Delivered through feature PR; Phase 1 complete |
+| 2 | Profile read | Not started | `feature/profile-read` | Pending | Next feature |
 | 2 | Diary read | Not started | `feature/diary-read` | Pending | |
 | 2 | Cache and refresh | Not started | `feature/cache-refresh` | Pending | |
 | 2 | MCP runtime | Not started | `feature/mcp-runtime` | Pending | |
