@@ -4,5 +4,6 @@ from letterboxd_mcp.database.repositories.cache_state import (
     CacheState,
     CacheStateRepository,
 )
+from letterboxd_mcp.database.repositories.profiles import ProfileRepository
 
-__all__ = ["CacheState", "CacheStateRepository"]
+__all__ = ["CacheState", "CacheStateRepository", "ProfileRepository"]
