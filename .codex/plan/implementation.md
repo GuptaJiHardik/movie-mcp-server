@@ -20,7 +20,7 @@ Update the Status, Branch/Commit, Tests, and Notes columns when each feature cha
 | Phase | Feature | Status | Branch/Commit | Tests | Notes |
 |---|---|---|---|---|---|
 | 0 | Project foundation | Complete | PR `#1` / `main` `fff3eb9` | 3 tests passed; CLI passed | Merged into `main` after history reconciliation |
-| 1 | Configuration and errors | In progress | `feature/config-errors` | 17 tests passed | Awaiting commit and push |
+| 1 | Configuration and errors | Complete | PR `#2` / `8808140` | 17 tests passed | Delivered through feature PR |
 | 1 | SQLite storage | Not started | `feature/sqlite-storage` | Pending | Next feature |
 | 1 | HTTP client | Not started | `feature/http-client` | Pending | |
 | 2 | Profile read | Not started | `feature/profile-read` | Pending | |
