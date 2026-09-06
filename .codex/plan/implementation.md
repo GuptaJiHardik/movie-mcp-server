@@ -4,7 +4,7 @@
 This document is the durable implementation roadmap for the Letterboxd read-only MCP MVP.
 
 The project uses Python 3.12+, FastMCP 4+, `requests`, BeautifulSoup, Pydantic, and SQLite.
-The MVP only needs public profile and diary reads exposed through MCP with local SQLite caching.
+The MVP includes public profile, diary, and enriched watched-film reads exposed through MCP with local SQLite caching.
 
 Do not expand scope unless the MVP is complete and a later requirement explicitly asks for it.
 
@@ -13,20 +13,19 @@ Do not expand scope unless the MVP is complete and a later requirement explicitl
 Required:
 - Public profile read
 - Public diary read with pagination
+- Enriched public watched-films read with bounded pagination
 - SQLite persistence/cache
 - Cache freshness and forced refresh
 - FastMCP stdio server
 - `get_profile`
 - `get_diary`
+- `get_films`
 - Basic offline verification and one opt-in live smoke flow
 - README/CODEX project-state documentation
 
 Not required for this MVP:
-- User films collection
-- Reviews
 - Watchlist
 - Lists
-- Film detail pages
 - Popular films
 - Cached movie search
 - Login/authenticated scraping
@@ -55,6 +54,7 @@ Existing database tables or code already completed for future resources must not
 | 2 | Profile read | Complete | PR `#5` / `main` `9ddd8cb` | 59 tests passed; build passed | Keep unchanged |
 | 2 | Diary read | Complete | PR `#6` / `main` `2a51164` | Temporary live/offline checks passed; build passed | Merged into `main` by the user |
 | 3 | MVP completion | In progress | `feature/mvp-completion` | 60 tests passed; build and disposable MVP check passed | Implementation verified; awaiting commit and pull-request delivery |
+| 4 | Enriched watched films | In progress | `feature/mvp-completion` | 72 tests and build passed; live selectors passed | Implementation verified; live tool smoke challenge-blocked; delivery remains |
 
 ## Completed Work — Do Not Redesign
 
@@ -118,9 +118,9 @@ After diary is accepted, merge PR `#6` before starting the final MVP branch.
 
 ### `feature/mvp-completion`
 
-This is the only new feature branch required after diary.
+This remains the only final MVP feature branch after diary.
 
-It combines cache behavior, FastMCP runtime, MVP verification, and documentation.
+It combines cache behavior, FastMCP runtime, enriched watched films, MVP verification, and documentation.
 
 ### A. Cache and Refresh
 Implement only the cache behavior needed by profile and diary.
@@ -153,6 +153,13 @@ get_diary(
     limit: int = 50,
     refresh: bool = False,
 )
+
+get_films(
+    username: str,
+    limit: int = 10,
+    offset: int = 0,
+    refresh: bool = False,
+)
 ```
 
 Rules:
@@ -176,19 +183,20 @@ Required checks:
 - `refresh=True` performs a live refresh
 - MCP can call `get_profile`
 - MCP can call `get_diary`
+- MCP can call `get_films`
 - structured errors serialize correctly
 - one opt-in public live smoke flow succeeds
 
-Use disposable scripts and temporary databases for the remaining checks, then remove them.
-Do not add new permanent test or fixture files.
-Do not create a large testing matrix for features outside the MVP.
+Use disposable scripts and temporary databases for live checks, then remove them.
+Focused permanent parser, repository, service, and MCP tests are required for the newly authorized `get_films` scope.
+Do not create a large testing matrix for features outside the three-tool MVP.
 
 ### D. Documentation
 Update README with:
 - install command
 - local configuration
 - stdio startup
-- the two MCP tools
+- the three MCP tools
 - simple examples
 - cache/refresh behavior
 - public-read-only limitation
@@ -200,6 +208,23 @@ Update `CODEX.md` with:
 - tests/checks performed
 - known limitations
 - MVP completion state
+
+### E. Enriched Watched Films
+Implement `get_films(username, limit=10, offset=0, refresh=False)` with a
+maximum limit of 20 and newest-added ordering.
+
+Requirements:
+- fully synchronize the profile's unique watched collection and public diary
+- return one film per title with every dated diary viewing nested beneath it
+- enrich only the requested window with original title, tagline, synopsis,
+  runtime, directors, genres, top-ten cast, and Letterboxd average rating
+- include the profile's rating, liked state, and latest public review when present
+- use 10-minute collection/review caching and the existing 24-hour film TTL
+- force collection, diary, selected film details, and selected review refreshes
+  when `refresh=True`
+- surface fetch, challenge, parse, and database errors without partial success
+- keep community reviews, private data, authentication, and browser automation
+  outside the MVP
 
 ## Architecture Rule
 
@@ -243,7 +268,7 @@ For the remaining work:
 1. Finish and merge the existing diary PR.
 2. Sync local `main` with `origin/main`.
 3. Create only `feature/mvp-completion`.
-4. Implement cache + MCP runtime + MVP verification + docs in that branch.
+4. Implement cache + MCP runtime + `get_films` + MVP verification + docs in that branch.
 5. Make logical commits inside the same branch when useful.
 6. Run the focused MVP checks.
 7. Update `CODEX.md` and this progress ledger.
@@ -263,7 +288,9 @@ The project MVP is complete when:
 - diary read is complete
 - `get_profile` works through MCP
 - `get_diary` works through MCP
+- `get_films` works through MCP
 - diary pagination works
+- watched-film limit/offset pagination and enrichment work
 - SQLite cache is reused
 - `refresh=True` forces live refresh
 - structured errors are preserved

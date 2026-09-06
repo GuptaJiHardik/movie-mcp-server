@@ -11,6 +11,7 @@ Current scope:
 * public read operations
 * profile read
 * diary read
+* enriched watched-films read
 * SQLite caching
 * local FastMCP stdio server
 
@@ -22,7 +23,7 @@ Out of scope:
 * private data
 * CAPTCHA bypass
 * remote MCP hosting
-* post-MVP Letterboxd tools
+* other post-MVP Letterboxd tools
 
 Do not expand scope unless explicitly requested after MVP completion.
 
@@ -38,16 +39,21 @@ Already validated:
 * Missing optional values remain `None`.
 * HTTP 200 does not guarantee parse success.
 * Pagination should follow the actual next-page link.
-* `requests + BeautifulSoup` is sufficient for current profile/diary reads.
+* `requests + BeautifulSoup` is sufficient for profile, diary, watched-film,
+  film-detail, and profile-review reads.
+
+Validated and now included in the current MVP:
+
+* `/{username}/films/by/added/`
+* profile-specific public review URLs
+* `/film/{slug}/`
 
 Known but not part of the current MVP:
 
-* `/{username}/films/`
-* `/{username}/reviews/`
+* community review collections
 * `/{username}/watchlist/`
 * `/{username}/lists/`
 * individual list pages
-* `/film/{slug}/`
 * `/films/popular/`
 
 These must not be implemented during the current MVP.
@@ -146,6 +152,25 @@ Purpose:
 * use cache when fresh
 * perform live fetch when needed
 
+```python
+get_films(
+    username: str,
+    limit: int = 10,
+    offset: int = 0,
+    refresh: bool = False,
+)
+```
+
+Purpose:
+
+* return unique watched titles ordered by newest added
+* support `limit`/`offset` pagination with a maximum limit of 20
+* nest every public dated diary viewing for each returned title
+* include core film metadata, directors, genres, top-ten cast, aggregate rating,
+  profile rating/like state, and the profile's latest public review
+* fully synchronize public collection and diary snapshots when stale
+* enrich only the requested result window
+
 No other MCP tools are required for this MVP.
 
 ## 7. Project Structure
@@ -158,10 +183,10 @@ letterboxd-mcp/
 |-- LETTERBOXD_MCP_SPEC.md
 |-- src/letterboxd_mcp/
 |   |-- client.py / config.py / service.py / server.py
-|   |-- models/{profile,film,diary}.py
-|   |-- parsers/{profile,diary}.py
+|   |-- models/{profile,film,diary,watched}.py
+|   |-- parsers/{profile,diary,watched,film_details,review}.py
 |   |-- database/{db.py,schema.sql,repositories/}
-|   `-- tools/{profile_tools,diary_tools}.py
+|   `-- tools/{profile_tools,diary_tools,film_tools}.py
 `-- tests/  (existing committed coverage)
 ```
 
@@ -268,6 +293,8 @@ MVP defaults:
 
 * profile: 30 minutes
 * diary: 10 minutes
+* watched collection and profile review: 10 minutes
+* generic enriched film details: 24 hours
 
 Existing film metadata TTL configuration may remain unchanged if already implemented.
 
@@ -280,6 +307,8 @@ Behavior:
 * failed refresh -> surface the live refresh error
 * incomplete diary cache -> fetch when it cannot satisfy a larger requested limit
 * final diary page reached -> store a `diary_complete` cache-state marker
+* `get_films` stale/missing snapshot -> fully synchronize watched collection and diary
+* `get_films refresh=True` -> also refresh every film and review in the selected window
 
 Do not present stale data as fresh.
 
@@ -290,6 +319,13 @@ MVP-active Pydantic models:
 * `Profile`
 * `Film`
 * `DiaryEntry`
+* `CastMember`
+* `FilmDetails`
+* `UserFilm`
+* `Viewing`
+* `UserReview`
+* `WatchedFilm`
+* `WatchedFilmsPage`
 
 Return normalized structured data.
 
@@ -314,8 +350,10 @@ A HTTP 200 response with broken or unrecognized expected markup must not become 
 
 Testing should remain focused on MVP behavior.
 
-Existing committed tests and fixtures remain unchanged.
-Remaining MVP verification must use disposable scripts and temporary databases that are removed after use.
+Existing committed tests and fixtures remain valid.
+The newly authorized `get_films` scope requires focused permanent offline parser,
+repository, service, and MCP coverage. Live checks use disposable scripts and
+temporary databases that are removed after use.
 
 Required coverage:
 
@@ -331,11 +369,14 @@ Required coverage:
 * cache miss/stale cache
 * forced refresh
 * MCP serialization/error behavior
+* watched collection pagination and newest-added ordering
+* full diary synchronization and nested repeat viewings
+* film detail, top-ten cast, aggregate rating, and latest profile review
+* `get_films` limit/offset validation, cache reuse, and forced refresh
 
 Keep a small opt-in live smoke flow.
 
-Do not add new permanent test or fixture files for the remaining MVP work.
-Disposable offline checks must not require internet access.
+Offline tests must not require internet access.
 
 Do not build large test suites for post-MVP functionality.
 
@@ -372,23 +413,18 @@ Current implementation order:
 4. `LetterboxdClient`. `[COMPLETE]`
 5. Profile model/parser/repository/service. `[COMPLETE]`
 6. Profile verification/tests. `[COMPLETE]`
-7. Diary model/parser/pagination/repositories/service. `[IN PROGRESS]`
-8. Finish diary verification.
-9. Merge existing diary work.
-10. Add profile/diary cache freshness and `refresh`.
-11. Create FastMCP stdio server.
-12. Register `get_profile`.
-13. Register `get_diary`.
-14. Test both through MCP.
-15. Verify SQLite cache reuse.
-16. Verify forced refresh.
-17. Run focused offline checks.
-18. Run one opt-in live smoke flow.
-19. Update README.
-20. Update `CODEX.md`.
-21. Stop implementation.
+7. Diary model/parser/pagination/repositories/service. `[COMPLETE]`
+8. Profile/diary cache freshness and FastMCP runtime. `[COMPLETE]`
+9. Register and test `get_profile` and `get_diary`. `[COMPLETE]`
+10. Add watched collection, film-detail, and profile-review parsers.
+11. Add migration-safe persistence and enriched watched-film models.
+12. Implement and register `get_films`.
+13. Verify all three tools, cache reuse, and forced refresh.
+14. Run focused offline checks and one opt-in live smoke flow.
+15. Update README and `CODEX.md`.
+16. Push, merge, synchronize `main`, and stop implementation.
 
-Do not implement films, reviews, watchlist, lists, film detail, popular films, or cached search during this MVP.
+Do not implement community reviews, watchlist, lists, popular films, or cached search during this MVP.
 
 ## 17. Development Rules
 
@@ -403,7 +439,7 @@ Do not implement films, reviews, watchlist, lists, film detail, popular films, o
 * Never silently ignore parser failures.
 * Prefer simple code over premature abstractions.
 * Use low concurrency and polite request behavior.
-* Do not add future features while finishing MVP.
+* Do not add features beyond the explicitly authorized three-tool MVP.
 
 ## 18. Git Workflow
 
@@ -425,6 +461,7 @@ feature/mvp-completion
    * cache/refresh
    * FastMCP runtime
    * MCP tools
+   * enriched watched films
    * focused MVP verification
    * README
    * `CODEX.md`
@@ -477,9 +514,11 @@ MVP is complete when:
 * diary pagination works
 * `get_profile` works through MCP
 * `get_diary` works through MCP
+* `get_films` works through MCP
 * repeated calls reuse SQLite cache
 * `refresh=True` performs a live refresh
 * data is typed and normalized
+* watched films paginate by limit/offset and include the agreed enrichment
 * focused offline verification passes
 * one opt-in live smoke flow succeeds
 * structured errors are preserved

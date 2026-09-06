@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-The read-only profile-and-diary MVP is implemented and verified on `feature/mvp-completion`, awaiting commit and pull-request delivery.
+The three-tool read-only MVP is implemented and verified offline on `feature/mvp-completion`. Git delivery remains; a full live `get_films` smoke is externally challenge-blocked.
 
 ## Completed functionality
 
@@ -29,8 +29,13 @@ The read-only profile-and-diary MVP is implemented and verified on `feature/mvp-
 - Added profile and diary freshness decisions backed by persisted cache-state timestamps.
 - Added incomplete-diary coverage handling and a `diary_complete` marker for real final pages.
 - Added forced live refresh behavior through `refresh=True`.
-- Added the local FastMCP stdio runtime with only the read-only `get_profile` and `get_diary` tools.
+- Added the local FastMCP stdio runtime with the read-only `get_profile`, `get_diary`, and `get_films` tools.
 - Added typed tool-boundary validation and structured Pydantic serialization.
+- Added full newest-added watched-collection synchronization and full public diary synchronization for enriched film reads.
+- Added bounded `get_films` limit/offset pagination with unique titles and nested repeat viewings.
+- Added film-detail parsing for original title, tagline, synopsis, runtime, directors, genres, top-ten cast, and aggregate rating.
+- Added profile-review parsing for full text, date, rating, like, and spoiler state.
+- Added migration-safe user-film, detail, director, genre, and cast persistence plus review-table migration.
 
 ## Files changed
 
@@ -43,6 +48,7 @@ The read-only profile-and-diary MVP is implemented and verified on `feature/mvp-
 - Added `client.py` and deterministic HTTP tests for success, retries, failures, encoding, URL safety, and session lifecycle.
 - Added the profile model, parser, repository, service, offline fixtures, and focused tests.
 - Added diary and film models, the diary parser, film/diary repositories, and paginated service integration without permanent diary test files.
+- Added watched-film/detail/review models, parsers, repositories, MCP adapter, offline fixtures, and focused integration tests.
 
 ## Key design decisions
 
@@ -69,6 +75,9 @@ The read-only profile-and-diary MVP is implemented and verified on `feature/mvp-
 - Fresh diary cache entries are reused for 10 minutes by default when they cover the requested limit or carry a matching completion marker.
 - Partial diary refreshes replace the cached snapshot and clear completion state; larger later requests fetch enough public pages again.
 - MCP adapters contain validation and registration only; all cache, HTTP, parsing, and persistence work remains in the layers below them.
+- Watched titles are unique and ordered newest-added; dated diary logs are nested instead of duplicating heavyweight film metadata.
+- `get_films` defaults to 10 items and caps responses at 20; collection/review data uses a 10-minute TTL and generic details use 24 hours.
+- `refresh=True` for `get_films` refreshes both complete user snapshots and every detail/review in the requested window.
 
 ## Tests executed
 
@@ -94,14 +103,20 @@ The read-only profile-and-diary MVP is implemented and verified on `feature/mvp-
 - `uv build` — passed; diary/film models, repositories, parser, and service are present in the wheel.
 - `uv run pytest -q` — passed, 60 tests after updating entry-point coverage for the stdio runtime.
 - Disposable temporary-database verification — passed for clean SQLite initialization, profile cache hit/stale/forced refresh, partial and complete diary cache behavior, larger-limit refetching, both in-memory MCP tool calls, typed serialization, and MCP error propagation; the script was removed afterward.
+- Live watched, film-detail, and review selector inspection — passed against current public Letterboxd markup.
+- `uv run pytest -q` — passed, 72 tests after watched-film parser, repository, migration, empty-diary, service, cache, and MCP coverage.
+- `uv build` — passed; the source distribution and wheel include the three-tool MVP.
+- Five opt-in `get_films` smoke attempts, including one with the supported custom User-Agent setting, were stopped by HTTP 200/403 Letterboxd challenge responses during collection pagination; the challenge detector behaved correctly and no bypass was attempted.
 
 ## Current limitations
 
-- Only public Letterboxd profile and diary reads are supported.
+- Only public Letterboxd profile, diary, watched-film, film-detail, and profile-review reads are supported.
+- `get_films` performs full collection and diary synchronization when stale, so its first call can be slow for large profiles.
+- Community reviews and metadata beyond the documented core film fields are not returned.
 - Letterboxd challenge pages are surfaced as errors; the project does not attempt CAPTCHA or anti-bot bypasses.
 - The scraper depends on current public page markup and may require parser maintenance when Letterboxd changes it.
 - No authentication, private data, write operations, browser automation, or remote hosting is included.
 
 ## Next implementation step
 
-Commit and deliver `feature/mvp-completion` through its pull request. Stop before adding post-MVP resources unless the user explicitly requests them.
+Commit documentation and deliver `feature/mvp-completion` through its pull request. The full live `get_films` smoke remains blocked by Letterboxd challenge responses; do not bypass them. Stop before adding post-MVP resources unless the user explicitly requests them.
