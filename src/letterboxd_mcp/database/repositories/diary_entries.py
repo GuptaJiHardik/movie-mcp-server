@@ -42,42 +42,64 @@ class DiaryEntryRepository:
         if not entries:
             return
         with self.database.transaction() as connection:
-            connection.executemany(
-                """
-                INSERT INTO diary_entries (
-                    id, username, film_slug, watched_date, rating, rewatch,
-                    liked, review_url, fetched_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    username = excluded.username,
-                    film_slug = excluded.film_slug,
-                    watched_date = excluded.watched_date,
-                    rating = excluded.rating,
-                    rewatch = excluded.rewatch,
-                    liked = excluded.liked,
-                    review_url = excluded.review_url,
-                    fetched_at = excluded.fetched_at
-                """,
-                [
-                    (
-                        entry.id,
-                        entry.username,
-                        entry.film.slug,
-                        entry.watched_date.isoformat(),
-                        entry.rating,
-                        int(entry.rewatch),
-                        None if entry.liked is None else int(entry.liked),
-                        entry.review_url,
-                        _serialize_datetime(entry.fetched_at),
-                    )
-                    for entry in entries
-                ],
+            _upsert_many(connection, entries)
+
+    def replace_for_user(
+        self,
+        username: str,
+        entries: list[DiaryEntry],
+    ) -> None:
+        """Atomically replace the cached diary snapshot for one user."""
+        if any(entry.username.casefold() != username.casefold() for entry in entries):
+            raise ValueError("all diary entries must belong to the requested user")
+        with self.database.transaction() as connection:
+            connection.execute(
+                "DELETE FROM diary_entries WHERE username = ?",
+                (username,),
             )
+            _upsert_many(connection, entries)
 
 
 def _serialize_datetime(value: datetime) -> str:
     return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _upsert_many(
+    connection: sqlite3.Connection,
+    entries: list[DiaryEntry],
+) -> None:
+    connection.executemany(
+        """
+        INSERT INTO diary_entries (
+            id, username, film_slug, watched_date, rating, rewatch,
+            liked, review_url, fetched_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            username = excluded.username,
+            film_slug = excluded.film_slug,
+            watched_date = excluded.watched_date,
+            rating = excluded.rating,
+            rewatch = excluded.rewatch,
+            liked = excluded.liked,
+            review_url = excluded.review_url,
+            fetched_at = excluded.fetched_at
+        """,
+        [
+            (
+                entry.id,
+                entry.username,
+                entry.film.slug,
+                entry.watched_date.isoformat(),
+                entry.rating,
+                int(entry.rewatch),
+                None if entry.liked is None else int(entry.liked),
+                entry.review_url,
+                _serialize_datetime(entry.fetched_at),
+            )
+            for entry in entries
+        ],
+    )
 
 
 def _entry_from_row(row: sqlite3.Row) -> DiaryEntry:

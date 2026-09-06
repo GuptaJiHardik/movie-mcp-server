@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diary reads are implemented on `feature/diary-read` and awaiting delivery.
+The read-only profile-and-diary MVP is implemented and verified on `feature/mvp-completion`, awaiting commit and pull-request delivery.
 
 ## Completed functionality
 
@@ -26,6 +26,11 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diar
 - Added strict diary parsing for watched dates, ratings, likes, rewatches, reviews, optional metadata, and the site's real next-page link.
 - Added film and diary-entry repositories with stable UPSERTs and joined diary reads.
 - Added `LetterboxdService.get_diary` with positive limits, early pagination stopping, loop detection, persistence, and structured 404 translation.
+- Added profile and diary freshness decisions backed by persisted cache-state timestamps.
+- Added incomplete-diary coverage handling and a `diary_complete` marker for real final pages.
+- Added forced live refresh behavior through `refresh=True`.
+- Added the local FastMCP stdio runtime with only the read-only `get_profile` and `get_diary` tools.
+- Added typed tool-boundary validation and structured Pydantic serialization.
 
 ## Files changed
 
@@ -43,7 +48,7 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diar
 
 - Python 3.12 is the minimum supported runtime.
 - The existing `src/letterboxd_mcp` package is the application root.
-- The console entry point remains lightweight until the FastMCP runtime feature is implemented.
+- The console and module entry points start the FastMCP stdio runtime.
 - Scraping, persistence, models, and tools have separate package boundaries from the beginning.
 - Settings can be constructed from an explicit mapping so tests do not depend on process-global environment state.
 - Environment variables use the `LETTERBOXD_MCP_` prefix and invalid numeric or unsafe values fail early.
@@ -57,11 +62,13 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diar
 - The client accepts only the configured origin, closes every response, returns decoded HTML, and performs no parsing.
 - Profile selectors remain isolated in the profile parser; SQL remains isolated in the profile repository.
 - Missing bio, avatar, and counts remain `None`; a missing profile boundary or display name raises `ParseError`.
-- Profile reads currently fetch on every call while accepting `refresh` for forward-compatible API stability; cache freshness remains a separate feature.
+- Fresh profile cache entries are reused for 30 minutes by default; `refresh=True` bypasses freshness.
 - Diary rows use viewing IDs as stable identities and expose their associated film as nested structured data.
 - Diary pagination follows `.pagination a.next` and stops as soon as the requested limit is collected.
 - Sparse diary film data does not overwrite richer cached film years or poster URLs with `None`.
-- Diary reads accept `refresh` for API stability but always fetch until cache freshness is implemented.
+- Fresh diary cache entries are reused for 10 minutes by default when they cover the requested limit or carry a matching completion marker.
+- Partial diary refreshes replace the cached snapshot and clear completion state; larger later requests fetch enough public pages again.
+- MCP adapters contain validation and registration only; all cache, HTTP, parsing, and persistence work remains in the layers below them.
 
 ## Tests executed
 
@@ -85,13 +92,16 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diar
 - Temporary offline edge-case validation covered rated, unrated, sparse, liked, rewatch, review, empty, malformed, and repository round-trip behavior; the check file was deleted afterward.
 - A focused live selector check confirmed unliked and liked states as `False` and `True`, with ratings normalized to `3.0` and `4.5`.
 - `uv build` — passed; diary/film models, repositories, parser, and service are present in the wheel.
+- `uv run pytest -q` — passed, 60 tests after updating entry-point coverage for the stdio runtime.
+- Disposable temporary-database verification — passed for clean SQLite initialization, profile cache hit/stale/forced refresh, partial and complete diary cache behavior, larger-limit refetching, both in-memory MCP tool calls, typed serialization, and MCP error propagation; the script was removed afterward.
 
 ## Current limitations
 
-- Cache freshness and MCP tools do not exist yet.
-- Profile and diary reads always fetch until the dedicated cache/refresh feature is implemented.
-- The console command only confirms successful installation.
+- Only public Letterboxd profile and diary reads are supported.
+- Letterboxd challenge pages are surfaced as errors; the project does not attempt CAPTCHA or anti-bot bypasses.
+- The scraper depends on current public page markup and may require parser maintenance when Letterboxd changes it.
+- No authentication, private data, write operations, browser automation, or remote hosting is included.
 
 ## Next implementation step
 
-Deliver `feature/diary-read` through its pull request, then implement cache freshness and forced refresh on `feature/cache-refresh`.
+Commit and deliver `feature/mvp-completion` through its pull request. Stop before adding post-MVP resources unless the user explicitly requests them.

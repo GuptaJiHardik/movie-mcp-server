@@ -1,233 +1,275 @@
-# Letterboxd MCP Server Implementation Plan
+# Letterboxd MCP Server — MVP Implementation Plan
 
 ## Purpose
+This document is the durable implementation roadmap for the Letterboxd read-only MCP MVP.
 
-This document is the durable implementation roadmap and progress record for the Letterboxd MCP server. Update it after every completed feature so a future session can determine what is finished, what was verified, and what comes next.
+The project uses Python 3.12+, FastMCP 4+, `requests`, BeautifulSoup, Pydantic, and SQLite.
+The MVP only needs public profile and diary reads exposed through MCP with local SQLite caching.
 
-The project will deliver the complete read-only roadmap using Python 3.12+, FastMCP 4+, `requests`, BeautifulSoup, Pydantic, and SQLite. Each feature starts from synchronized `main` and is delivered through a `feature/<short-name>` branch and pull request. Every completed feature must also update `CODEX.md`, pass its required checks, be committed, pushed, and merged according to `.codex/skills/github_skill.md`.
+Do not expand scope unless the MVP is complete and a later requirement explicitly asks for it.
+
+## MVP Scope
+
+Required:
+- Public profile read
+- Public diary read with pagination
+- SQLite persistence/cache
+- Cache freshness and forced refresh
+- FastMCP stdio server
+- `get_profile`
+- `get_diary`
+- Basic offline verification and one opt-in live smoke flow
+- README/CODEX project-state documentation
+
+Not required for this MVP:
+- User films collection
+- Reviews
+- Watchlist
+- Lists
+- Film detail pages
+- Popular films
+- Cached movie search
+- Login/authenticated scraping
+- Playwright
+- Write operations
+- Remote MCP hosting
+- Redis/PostgreSQL
+- Background synchronization
+
+Existing database tables or code already completed for future resources must not be removed merely because those features are outside the MVP.
 
 ## Status Legend
-
 - `Not started`: no implementation work has begun.
-- `In progress`: implementation exists locally but the feature is not complete or pushed.
-- `Blocked`: completion depends on a documented external issue or decision.
-- `Complete`: acceptance checks passed, documentation was updated, and the pull request was merged into `main`.
+- `In progress`: implementation exists but is not complete/merged.
+- `Blocked`: completion depends on a documented issue.
+- `Complete`: accepted, tested, documented, and merged.
 
 ## Progress Ledger
 
-Update the Status, Branch/Commit, Tests, and Notes columns when each feature changes state.
-
 | Phase | Feature | Status | Branch/Commit | Tests | Notes |
 |---|---|---|---|---|---|
-| 0 | Project foundation | Complete | PR `#1` / `main` `fff3eb9` | 3 tests passed; CLI passed | Merged into `main` after history reconciliation |
-| 1 | Configuration and errors | Complete | PR `#2` / `8808140` | 17 tests passed | Delivered through feature PR |
-| 1 | SQLite storage | Complete | PR `#3` / `82eb450` | 28 tests passed; build passed | Delivered through feature PR |
-| 1 | HTTP client | Complete | PR `#4` / `5271f57` | 44 tests passed; build passed | Delivered through feature PR; Phase 1 complete |
-| 2 | Profile read | Complete | PR `#5` / `main` `9ddd8cb` | 59 tests passed; build passed | Merged into `main` by the user |
-| 2 | Diary read | In progress | PR `#6` / `14ffa01` | Temporary live/offline checks passed; build passed | Pushed without permanent test files per user request; awaiting merge |
-| 2 | Cache and refresh | Not started | `feature/cache-refresh` | Pending | |
-| 2 | MCP runtime | Not started | `feature/mcp-runtime` | Pending | |
-| 2 | MVP hardening | Not started | `feature/mvp-hardening` | Pending | |
-| 3 | User films | Not started | `feature/user-films` | Pending | Requires live page validation |
-| 3 | User reviews | Not started | `feature/user-reviews` | Pending | Requires live page validation |
-| 3 | User watchlist | Not started | `feature/user-watchlist` | Pending | Requires live page validation |
-| 3 | User lists | Not started | `feature/user-lists` | Pending | Requires live page validation |
-| 3 | Film details | Not started | `feature/film-details` | Pending | Requires live page validation |
-| 3 | Popular films | Not started | `feature/popular-films` | Pending | Requires live page validation |
-| 4 | Cached movie search | Not started | `feature/cached-movie-search` | Pending | |
-| 4 | Release readiness | Not started | `feature/release-readiness` | Pending | |
+| 0 | Project foundation | Complete | PR `#1` / `main` `fff3eb9` | 3 tests passed; CLI passed | Keep unchanged |
+| 1 | Configuration and errors | Complete | PR `#2` / `8808140` | 17 tests passed | Keep unchanged |
+| 1 | SQLite storage | Complete | PR `#3` / `82eb450` | 28 tests passed; build passed | Keep unchanged |
+| 1 | HTTP client | Complete | PR `#4` / `5271f57` | 44 tests passed; build passed | Keep unchanged |
+| 2 | Profile read | Complete | PR `#5` / `main` `9ddd8cb` | 59 tests passed; build passed | Keep unchanged |
+| 2 | Diary read | Complete | PR `#6` / `main` `2a51164` | Temporary live/offline checks passed; build passed | Merged into `main` by the user |
+| 3 | MVP completion | In progress | `feature/mvp-completion` | 60 tests passed; build and disposable MVP check passed | Implementation verified; awaiting commit and pull-request delivery |
 
-## Implementation Phases
+## Completed Work — Do Not Redesign
 
-### Phase 0: Project Foundation
+### Project Foundation
+Already delivered:
+- `src` package structure
+- Python 3.12+ runtime
+- dependencies and CLI entry point
+- repository ignores
+- README and `CODEX.md`
 
-#### `feature/project-foundation`
+### Configuration and Errors
+Already delivered:
+- typed configuration
+- database path
+- HTTP timeout/User-Agent/retries
+- cache TTL configuration
+- structured project errors
 
-- Convert the generated stub into the documented `src` package structure.
-- Change the supported runtime to Python 3.12+.
-- Add the runtime and test dependencies.
-- Configure the console entry point.
-- Ignore `server.db`, secrets, caches, build output, and local environments.
-- Create the initial README and `CODEX.md` project context.
+### SQLite Storage
+Already delivered:
+- idempotent SQLite initialization
+- current schema and indexes
+- transaction handling
+- UPSERT support
+- timestamps/cache-state operations
+- database error wrapping
 
-Completion requires a clean installation and a passing minimal package/entry-point test.
+Do not shrink or redesign the completed schema just because some future feature tables are unused by the MVP.
 
-### Phase 1: Core Infrastructure
+### HTTP Client
+Already delivered:
+- reusable `requests.Session`
+- browser-like User-Agent
+- explicit timeouts
+- limited retry handling
+- UTF-8 handling
+- challenge-page detection
+- structured fetch failures
 
-#### `feature/config-errors`
+### Profile Read
+Already delivered:
+- `Profile` model/parser
+- repository integration
+- `LetterboxdService.get_profile`
+- sparse/optional value behavior
+- unexpected-markup handling
 
-- Add typed configuration for the database path, HTTP timeout, user agent, retry limits, and cache TTLs.
-- Define `UserNotFoundError`, `FilmNotFoundError`, `LetterboxdFetchError`, `ChallengePageError`, `ParseError`, and `DatabaseError`.
-- Keep configuration usable from tests without depending on global machine state.
+### Diary Read
+Current work must be completed without expanding its scope:
+- `Film` and `DiaryEntry` models
+- diary parser
+- URL/date/rating/rewatch normalization
+- real next-page pagination
+- requested-limit stopping
+- film + diary persistence
 
-#### `feature/sqlite-storage`
+After diary is accepted, merge PR `#6` before starting the final MVP branch.
 
-- Add idempotent SQLite initialization and the `profiles`, `films`, `diary_entries`, `reviews`, `watchlist`, `lists`, `list_items`, and `cache_state` tables.
-- Add the specified diary, review, watchlist, and film-title indexes.
-- Implement transaction handling, stable-identity UPSERTs, timestamps, and cache-state operations.
-- Wrap database failures in `DatabaseError` without hiding the original cause.
+## Remaining Work — One Branch Only
 
-Completion requires repository tests against isolated temporary databases.
+### `feature/mvp-completion`
 
-#### `feature/http-client`
+This is the only new feature branch required after diary.
 
-- Implement `LetterboxdClient` around one reusable `requests.Session`.
-- Send a browser-like user agent and explicit timeouts.
-- Retry transient 429 and 5xx responses with limited backoff.
-- Decode UTF-8 safely where required.
-- Detect strong challenge-page signals and never attempt CAPTCHA bypass.
-- Raise structured fetch errors and perform no parsing.
+It combines cache behavior, FastMCP runtime, MVP verification, and documentation.
 
-### Phase 2: MVP Capabilities
+### A. Cache and Refresh
+Implement only the cache behavior needed by profile and diary.
 
-#### `feature/profile-read`
+Requirements:
+- use stored fetch timestamps
+- use `profile` and `diary` cache states for freshness
+- use a `diary_complete` cache-state marker when the cached rows reach the real final page
+- profile TTL: 30 minutes
+- diary TTL: 10 minutes
+- return fresh cached data without HTTP
+- fetch again when a larger diary limit exceeds incomplete cached coverage
+- `refresh=True` forces a live fetch
+- successful refresh updates SQLite
+- failed refresh surfaces the error
+- do not present stale data as fresh
 
-- Add the `Profile` model and page-specific profile parser.
-- Add normal and sparse saved HTML fixtures.
-- Add profile repository integration and `LetterboxdService.get_profile`.
-- Preserve missing optional values as `None`.
-- Treat unexpected HTTP-200 markup as `ParseError`, not an empty success.
+Film metadata TTL may remain configurable if already present, but no standalone film-detail feature is required.
 
-#### `feature/diary-read`
+### B. FastMCP Runtime
+Create the local stdio FastMCP server.
 
-- Add `Film` and `DiaryEntry` models and the diary parser.
-- Normalize film URLs, dates, ratings, rewatch state, and other optional values.
-- Follow the page's real next-page link and stop once the requested limit is collected.
-- Persist films and diary entries through repositories.
-- Cover rated, unrated, rewatch, empty, malformed, and multi-page fixtures.
-
-#### `feature/cache-refresh`
-
-- Implement freshness checks using stored fetch timestamps.
-- Use default TTLs of 30 minutes for profiles, 10 minutes for diaries, and 24 hours for film metadata.
-- Return fresh cached data without an HTTP request.
-- Make `refresh=True` bypass freshness and replace cached data after a successful fetch.
-- Preserve usable cached data if a refresh fails; surface the refresh error rather than presenting stale data as fresh.
-
-#### `feature/mcp-runtime`
-
-- Create a local stdio FastMCP server.
-- Register thin, read-only `get_profile` and `get_diary` tools.
-- Validate inputs at the tool boundary and delegate all behavior to the service.
-- Keep selectors and SQL out of MCP tool functions.
-- Add MCP-level serialization and structured-error integration tests.
-
-#### `feature/mvp-hardening`
-
-- Add explicitly opt-in live smoke tests.
-- Verify at least one public profile and one diary flow, including pagination where available.
-- Verify clean-database startup, cache reuse, and forced refresh through MCP.
-- Document installation, configuration, stdio startup, tool examples, limitations, and smoke-test usage.
-
-MVP is complete only when `get_profile` and `get_diary` work through MCP, pagination and caching are verified, `refresh=True` performs a live refresh, data is typed and normalized, fixture tests pass, structured errors are used, and at least one live smoke test succeeds.
-
-### Phase 3: Validated Public Read Tools
-
-Every feature in this phase must begin by validating its public Letterboxd page. Capture representative offline fixtures only after identifying reliable page structure. If validation cannot establish reliable selectors or encounters challenge protection, do not expose or push an incomplete MCP tool; mark the feature blocked and record the evidence.
-
-#### `feature/user-films`
-
-Validate `/{username}/films/`, then add its parser, normalized models, repository/service integration, caching, pagination, tests, and `get_films`.
-
-#### `feature/user-reviews`
-
-Validate `/{username}/reviews/`, then add normalized review parsing, persistence, caching, pagination, tests, and `get_reviews`.
-
-#### `feature/user-watchlist`
-
-Validate `/{username}/watchlist/`, then add watchlist parsing, ordered persistence, caching, pagination, tests, and `get_watchlist`.
-
-#### `feature/user-lists`
-
-Validate the list index and individual list pages, then add list and list-item models, parsers, repositories, caching, pagination, tests, `get_lists`, and `get_list`.
-
-#### `feature/film-details`
-
-Validate `/film/{slug}/`, then add film-detail parsing, canonical identity, 24-hour caching, not-found behavior, tests, and `get_film`.
-
-#### `feature/popular-films`
-
-Validate `/films/popular/`, then add pagination, normalized film results, caching, tests, and `get_popular_films`.
-
-Use 10-minute TTLs for account collections and individual lists, and a 30-minute TTL for popular films.
-
-### Phase 4: Local Search and Release Readiness
-
-#### `feature/cached-movie-search`
-
-- Add `search_cached_movies(query: str, limit: int = 20)`.
-- Search cached film titles case-insensitively without performing network requests.
-- Rank exact matches first, prefix matches second, and substring matches last.
-- Return normalized `Film` results.
-
-#### `feature/release-readiness`
-
-- Run the complete offline suite and the opt-in live smoke suite.
-- Verify initialization and MCP startup from a clean local database.
-- Audit that every MCP operation is read-only and public-data-only.
-- Confirm no login, browser automation, CAPTCHA bypass, or remote hosting was introduced.
-- Finalize README and `CODEX.md` with supported tools and known markup limitations.
-
-## Public Interfaces
-
-All network-backed tools accept `refresh: bool = False`. Collection limits must be positive, default to 50, and stop pagination as soon as enough results have been collected.
+Expose only:
 
 ```python
 get_profile(username: str, refresh: bool = False)
-get_diary(username: str, limit: int = 50, refresh: bool = False)
-get_films(username: str, limit: int = 50, refresh: bool = False)
-get_reviews(username: str, limit: int = 50, refresh: bool = False)
-get_watchlist(username: str, limit: int = 50, refresh: bool = False)
-get_lists(username: str, limit: int = 50, refresh: bool = False)
-get_list(username: str, list_slug: str, limit: int = 50, refresh: bool = False)
-get_film(film_slug: str, refresh: bool = False)
-get_popular_films(limit: int = 50, refresh: bool = False)
-search_cached_movies(query: str, limit: int = 20)
+
+get_diary(
+    username: str,
+    limit: int = 50,
+    refresh: bool = False,
+)
 ```
 
-## Architecture and Data Rules
+Rules:
+- tools are read-only
+- validate inputs at tool boundary
+- delegate all work to the service layer
+- no selectors in tool code
+- no SQL in tool code
+- return typed/serializable structured data
 
-- Preserve the flow: MCP tool -> service -> repository/cache -> HTTP client -> page parser -> Pydantic model -> UPSERT.
-- SQLite is a local cache and store, never the authoritative source.
-- Selectors belong only in parsers, SQL only in repositories, and HTTP behavior only in the client.
-- Never return or persist raw HTML as tool output.
-- Normalize film paths to `/film/{slug}/`, dates to `YYYY-MM-DD`, and ratings to numeric values.
+### C. MVP Verification
+Keep verification focused.
+
+Required checks:
+- clean SQLite startup
+- profile service works
+- diary service works
+- diary pagination works
+- positive diary limit is respected
+- fresh cache avoids an HTTP request
+- `refresh=True` performs a live refresh
+- MCP can call `get_profile`
+- MCP can call `get_diary`
+- structured errors serialize correctly
+- one opt-in public live smoke flow succeeds
+
+Use disposable scripts and temporary databases for the remaining checks, then remove them.
+Do not add new permanent test or fixture files.
+Do not create a large testing matrix for features outside the MVP.
+
+### D. Documentation
+Update README with:
+- install command
+- local configuration
+- stdio startup
+- the two MCP tools
+- simple examples
+- cache/refresh behavior
+- public-read-only limitation
+
+Update `CODEX.md` with:
+- completed functionality
+- important files
+- current architecture
+- tests/checks performed
+- known limitations
+- MVP completion state
+
+## Architecture Rule
+
+Preserve this flow:
+
+```text
+MCP tool
+-> service
+-> repository/cache
+-> HTTP client when needed
+-> BeautifulSoup parser
+-> typed model
+-> SQLite UPSERT
+-> structured result
+```
+
+Layer ownership:
+- HTTP behavior -> client
+- selectors/parsing -> parser
+- SQL -> repository/database
+- orchestration/cache decisions -> service
+- MCP interface -> tools/server
+
+Do not move implementation logic into MCP tool functions.
+
+## Data Rules
+- SQLite is a local cache/store, not Letterboxd's source of truth.
+- Never return raw HTML.
 - Preserve absent optional values as `None`.
-- Do not silently convert fetch, challenge, parsing, or database failures into empty results.
+- Normalize dates to `YYYY-MM-DD`.
+- Normalize ratings to numeric values.
+- Normalize film paths to `/film/{slug}/`.
+- Do not convert fetch/parse/database failures into empty successful results.
 
-## Testing Strategy
+## Simplified Git Workflow
 
-- Ordinary tests must be offline and use saved HTML fixtures, mocked HTTP responses, temporary SQLite databases, and a controllable clock for TTL behavior.
-- Cover success, sparse data, empty data, pagination, malformed HTTP-200 pages, not-found pages, challenge pages, timeouts, retries, database errors, stale cache, fresh cache, and forced refresh.
-- Verify MCP return serialization and error behavior without duplicating service logic in the tools.
-- Mark live tests separately and require explicit opt-in. Use low request volume and public test pages only.
-- Before every feature push, run the feature's focused tests and the complete offline suite.
+Completed branches and PR history stay unchanged.
 
-## Git and Documentation Workflow
+For the remaining work:
 
-Each feature begins only after fetching the remote and fast-forwarding local `main` to `origin/main`. Create its branch from that synchronized base, then complete the feature through a pull request before starting the next feature.
+1. Finish and merge the existing diary PR.
+2. Sync local `main` with `origin/main`.
+3. Create only `feature/mvp-completion`.
+4. Implement cache + MCP runtime + MVP verification + docs in that branch.
+5. Make logical commits inside the same branch when useful.
+6. Run the focused MVP checks.
+7. Update `CODEX.md` and this progress ledger.
+8. Push the branch once the combined MVP work is ready.
+9. Open one PR into `main`.
+10. Merge it after checks pass.
+11. Sync local `main`.
 
-For every feature:
+Do not create separate branches for cache, MCP runtime, hardening, smoke tests, or documentation.
 
-1. Verify `origin`, fetch it, switch to local `main`, and run `git pull --ff-only origin main` with a clean worktree.
-2. Create and switch to the planned `feature/<short-name>` branch from `origin/main`.
-3. Implement only that feature and its tests.
-4. Run focused checks and the complete offline suite.
-5. Update `CODEX.md` with completed behavior, files changed, design decisions, tests and results, current limitations, and the next feature.
-6. Update the Progress Ledger in this file.
-7. Review status and diff, then commit only relevant files with a concise imperative message.
-8. Fetch again, incorporate any new `origin/main` commits, and rerun tests before pushing.
-9. Push using `git push -u origin feature/<short-name>`.
-10. Create a pull request into `main`, verify mergeability and required checks, and squash-merge it without bypassing protections.
-11. Fetch and fast-forward local `main` to the merged `origin/main`.
-12. Record the commit, tests, pull request, merge result, and updated `main` revision in the Progress Ledger.
+Do not force-push, commit secrets, commit `server.db`, or include unrelated work.
 
-Never commit secrets, local databases, caches, or unrelated user work. Never force-push. If authentication, remote conflicts, failing tests, or branch protection prevents completion, preserve the local work, mark the feature blocked, and record the exact blocker.
+## MVP Completion Criteria
 
-## Agreed Assumptions
+The project MVP is complete when:
+- profile read is complete
+- diary read is complete
+- `get_profile` works through MCP
+- `get_diary` works through MCP
+- diary pagination works
+- SQLite cache is reused
+- `refresh=True` forces live refresh
+- structured errors are preserved
+- focused offline checks pass
+- one opt-in live smoke flow succeeds
+- README and `CODEX.md` describe the finished MVP
 
-- The roadmap covers the MVP, all post-MVP public read tools, cached search, and release hardening.
-- Python 3.12 is the minimum supported version even though the generated stub initially specified 3.14.
-- Each feature is merged into `main` before the next feature branch is created.
-- The server remains local, stdio-based, unauthenticated, and strictly read-only.
-- Exact optional fields for previously unvalidated pages will be finalized from live page evidence while preserving the common normalization and error rules.
+After these conditions pass, stop implementation.
+Post-MVP Letterboxd read tools must be planned separately only if explicitly requested.
