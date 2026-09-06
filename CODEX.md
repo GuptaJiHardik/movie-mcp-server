@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 HTTP client is implemented. After its feature PR merges, Phase 1 is complete and the next milestone is profile reads.
+Phase 1 core infrastructure is complete. The next milestone is Phase 2 profile reads.
 
 ## Completed functionality
 
