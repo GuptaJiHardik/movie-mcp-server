@@ -1,0 +1,1 @@
+"""Thin FastMCP tool adapters."""
