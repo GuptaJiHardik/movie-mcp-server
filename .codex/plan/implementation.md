@@ -19,7 +19,7 @@ Update the Status, Branch/Commit, Tests, and Notes columns when each feature cha
 
 | Phase | Feature | Status | Branch/Commit | Tests | Notes |
 |---|---|---|---|---|---|
-| 0 | Project foundation | In progress | `feature/project-foundation` | 3 tests passed; CLI passed | Awaiting commit and push |
+| 0 | Project foundation | Complete | `feature/project-foundation` / `bccaf73` | 3 tests passed; CLI passed | Foundation implementation committed |
 | 1 | Configuration and errors | Not started | `feature/config-errors` | Pending | Next feature |
 | 1 | SQLite storage | Not started | `feature/sqlite-storage` | Pending | |
 | 1 | HTTP client | Not started | `feature/http-client` | Pending | |

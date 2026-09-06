@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 0: project foundation.
+Phase 0 project foundation is complete. The next milestone is Phase 1 configuration and errors.
 
 ## Completed functionality
 
