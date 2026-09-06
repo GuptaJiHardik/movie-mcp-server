@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 core infrastructure is complete. The next milestone is Phase 2 profile reads.
+Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented and verified in PR `#5`, but merge is awaiting an authorized GitHub credential.
 
 ## Completed functionality
 
@@ -18,6 +18,10 @@ Phase 1 core infrastructure is complete. The next milestone is Phase 2 profile r
 - Added cache-state timestamp persistence with stable-identity UPSERT and UTC normalization.
 - Added a reusable Letterboxd HTTP client with explicit headers/timeouts and bounded retry behavior.
 - Added challenge-page and cross-origin redirect detection without CAPTCHA bypass behavior.
+- Added the immutable `Profile` model with optional profile metadata and timezone-aware fetch timestamps.
+- Added a page-scoped profile parser for current public profile markup, including normal and sparse fixtures.
+- Added profile UPSERT/read persistence and the `LetterboxdService.get_profile` orchestration path.
+- Added structured 404-to-`UserNotFoundError` translation and safe username validation.
 
 ## Files changed
 
@@ -28,6 +32,7 @@ Phase 1 core infrastructure is complete. The next milestone is Phase 2 profile r
 - Added `config.py`, `errors.py`, and focused configuration/error tests.
 - Added the packaged SQLite schema, database adapter, cache-state repository, and isolated database tests.
 - Added `client.py` and deterministic HTTP tests for success, retries, failures, encoding, URL safety, and session lifecycle.
+- Added the profile model, parser, repository, service, offline fixtures, and focused tests.
 
 ## Key design decisions
 
@@ -45,6 +50,9 @@ Phase 1 core infrastructure is complete. The next milestone is Phase 2 profile r
 - HTTP retries cover connection timeouts and transient 429/5xx responses with exponential backoff.
 - Numeric `Retry-After` values are honored with a 60-second upper bound.
 - The client accepts only the configured origin, closes every response, returns decoded HTML, and performs no parsing.
+- Profile selectors remain isolated in the profile parser; SQL remains isolated in the profile repository.
+- Missing bio, avatar, and counts remain `None`; a missing profile boundary or display name raises `ParseError`.
+- Profile reads currently fetch on every call while accepting `refresh` for forward-compatible API stability; cache freshness remains a separate feature.
 
 ## Tests executed
 
@@ -59,12 +67,18 @@ Phase 1 core infrastructure is complete. The next milestone is Phase 2 profile r
 - Wheel inspection — confirmed `letterboxd_mcp/database/schema.sql` is packaged.
 - `uv run pytest` — passed, 44 tests after HTTP client implementation.
 - `uv build` — passed with both `client.py` and `database/schema.sql` present in the wheel.
+- `uv run pytest tests/test_profile_parser.py tests/database/test_profile_repository.py tests/test_service.py -q` — passed, 14 tests.
+- `uv run pytest -q` — passed, 59 tests after profile-read implementation.
+- `uv build` — passed; the profile model, parser, repository, and service are present in the wheel.
+- One opt-in live parser check against `/dave/` was stopped by the existing challenge detector on an HTTP 200 challenge response; no bypass was attempted and offline acceptance remained green.
+- PR `#5` was reported clean with no required check runs, but the squash-merge request failed with HTTP 403 because the available GitHub token cannot merge pull requests.
 
 ## Current limitations
 
-- No page parsers, resource repositories, service, or MCP tools exist yet.
+- Diary parsing/persistence, cache freshness, and MCP tools do not exist yet.
+- Profile reads always fetch until the dedicated cache/refresh feature is implemented.
 - The console command only confirms successful installation.
 
 ## Next implementation step
 
-Implement the profile model, parser, repository, and service path on `feature/profile-read`.
+Merge PR `#5`, synchronize local `main`, then implement diary reads on `feature/diary-read`.
