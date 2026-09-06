@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 core infrastructure and Phase 2 profile reads are complete. The next capability is diary reads.
+Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented and verified in PR `#5`, but merge is awaiting an authorized GitHub credential.
 
 ## Completed functionality
 
@@ -71,6 +71,7 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. The next cap
 - `uv run pytest -q` — passed, 59 tests after profile-read implementation.
 - `uv build` — passed; the profile model, parser, repository, and service are present in the wheel.
 - One opt-in live parser check against `/dave/` was stopped by the existing challenge detector on an HTTP 200 challenge response; no bypass was attempted and offline acceptance remained green.
+- PR `#5` was reported clean with no required check runs, but the squash-merge request failed with HTTP 403 because the available GitHub token cannot merge pull requests.
 
 ## Current limitations
 
@@ -80,4 +81,4 @@ Phase 1 core infrastructure and Phase 2 profile reads are complete. The next cap
 
 ## Next implementation step
 
-Implement the diary model, parser, pagination, repositories, and service path on `feature/diary-read` from synchronized `main`.
+Merge PR `#5`, synchronize local `main`, then implement diary reads on `feature/diary-read`.
