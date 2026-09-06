@@ -11,7 +11,7 @@ The project will deliver the complete read-only roadmap using Python 3.12+, Fast
 - `Not started`: no implementation work has begun.
 - `In progress`: implementation exists locally but the feature is not complete or pushed.
 - `Blocked`: completion depends on a documented external issue or decision.
-- `Complete`: acceptance checks passed, documentation was updated, and the branch was pushed.
+- `Complete`: acceptance checks passed, documentation was updated, and the pull request was merged into `main`.
 
 ## Progress Ledger
 
@@ -19,9 +19,9 @@ Update the Status, Branch/Commit, Tests, and Notes columns when each feature cha
 
 | Phase | Feature | Status | Branch/Commit | Tests | Notes |
 |---|---|---|---|---|---|
-| 0 | Project foundation | Complete | `feature/project-foundation` / `bccaf73` | 3 tests passed; CLI passed | Foundation implementation committed |
-| 1 | Configuration and errors | Not started | `feature/config-errors` | Pending | Next feature |
-| 1 | SQLite storage | Not started | `feature/sqlite-storage` | Pending | |
+| 0 | Project foundation | Complete | PR `#1` / `main` `fff3eb9` | 3 tests passed; CLI passed | Merged into `main` after history reconciliation |
+| 1 | Configuration and errors | Complete | PR `#2` / `8808140` | 17 tests passed | Delivered through feature PR |
+| 1 | SQLite storage | Not started | `feature/sqlite-storage` | Pending | Next feature |
 | 1 | HTTP client | Not started | `feature/http-client` | Pending | |
 | 2 | Profile read | Not started | `feature/profile-read` | Pending | |
 | 2 | Diary read | Not started | `feature/diary-read` | Pending | |

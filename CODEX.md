@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 0 project foundation is complete. The next milestone is Phase 1 configuration and errors.
+Phase 1 configuration and structured errors are implemented. The next milestone is SQLite storage.
 
 ## Completed functionality
 
@@ -11,6 +11,8 @@ Phase 0 project foundation is complete. The next milestone is Phase 1 configurat
 - Added importable package, module, and console entry points.
 - Created package boundaries for database repositories, models, parsers, and MCP tools.
 - Added development setup and architecture documentation.
+- Added immutable typed runtime settings with documented defaults and optional environment overrides.
+- Added the shared structured error hierarchy for user, film, fetch, challenge, parse, and database failures.
 
 ## Files changed
 
@@ -18,6 +20,7 @@ Phase 0 project foundation is complete. The next milestone is Phase 1 configurat
 - Added the package entry points and initial subsystem packages under `src/letterboxd_mcp`.
 - Added a minimal package/entry-point test.
 - Added `README.md`, this context file, the product specification, and Codex workflow documentation.
+- Added `config.py`, `errors.py`, and focused configuration/error tests.
 
 ## Key design decisions
 
@@ -25,6 +28,10 @@ Phase 0 project foundation is complete. The next milestone is Phase 1 configurat
 - The existing `src/letterboxd_mcp` package is the application root.
 - The console entry point remains lightweight until the FastMCP runtime feature is implemented.
 - Scraping, persistence, models, and tools have separate package boundaries from the beginning.
+- Settings can be constructed from an explicit mapping so tests do not depend on process-global environment state.
+- Environment variables use the `LETTERBOXD_MCP_` prefix and invalid numeric or unsafe values fail early.
+- Expected operational failures share `LetterboxdError` while retaining machine-readable context attributes.
+- Every feature now starts from synchronized `main`, is reviewed in a pull request, and is merged before the next feature begins.
 
 ## Tests executed
 
@@ -32,6 +39,8 @@ Phase 0 project foundation is complete. The next milestone is Phase 1 configurat
 - `uv run pytest` — passed, 3 tests.
 - `uv run letterboxd-mcp` — passed and printed the foundation readiness message.
 - `uv run python --version` — confirmed Python 3.12.14.
+- `uv run pytest` — passed, 17 tests after configuration and error implementation.
+- Direct `Settings.from_env({})` verification — passed with documented defaults.
 
 ## Current limitations
 
@@ -40,4 +49,4 @@ Phase 0 project foundation is complete. The next milestone is Phase 1 configurat
 
 ## Next implementation step
 
-Implement typed configuration and the custom error hierarchy on `feature/config-errors`.
+Implement the idempotent SQLite schema and repository infrastructure on `feature/sqlite-storage`.
