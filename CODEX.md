@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented and verified in PR `#5`, but merge is awaiting an authorized GitHub credential.
+Phase 1 core infrastructure and Phase 2 profile reads are complete. Phase 2 diary reads are implemented on `feature/diary-read` and awaiting delivery.
 
 ## Completed functionality
 
@@ -22,6 +22,10 @@ Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented a
 - Added a page-scoped profile parser for current public profile markup, including normal and sparse fixtures.
 - Added profile UPSERT/read persistence and the `LetterboxdService.get_profile` orchestration path.
 - Added structured 404-to-`UserNotFoundError` translation and safe username validation.
+- Added immutable `Film` and `DiaryEntry` models with nested normalized film data.
+- Added strict diary parsing for watched dates, ratings, likes, rewatches, reviews, optional metadata, and the site's real next-page link.
+- Added film and diary-entry repositories with stable UPSERTs and joined diary reads.
+- Added `LetterboxdService.get_diary` with positive limits, early pagination stopping, loop detection, persistence, and structured 404 translation.
 
 ## Files changed
 
@@ -33,6 +37,7 @@ Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented a
 - Added the packaged SQLite schema, database adapter, cache-state repository, and isolated database tests.
 - Added `client.py` and deterministic HTTP tests for success, retries, failures, encoding, URL safety, and session lifecycle.
 - Added the profile model, parser, repository, service, offline fixtures, and focused tests.
+- Added diary and film models, the diary parser, film/diary repositories, and paginated service integration without permanent diary test files.
 
 ## Key design decisions
 
@@ -53,6 +58,10 @@ Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented a
 - Profile selectors remain isolated in the profile parser; SQL remains isolated in the profile repository.
 - Missing bio, avatar, and counts remain `None`; a missing profile boundary or display name raises `ParseError`.
 - Profile reads currently fetch on every call while accepting `refresh` for forward-compatible API stability; cache freshness remains a separate feature.
+- Diary rows use viewing IDs as stable identities and expose their associated film as nested structured data.
+- Diary pagination follows `.pagination a.next` and stops as soon as the requested limit is collected.
+- Sparse diary film data does not overwrite richer cached film years or poster URLs with `None`.
+- Diary reads accept `refresh` for API stability but always fetch until cache freshness is implemented.
 
 ## Tests executed
 
@@ -71,14 +80,18 @@ Phase 1 core infrastructure is complete. Phase 2 profile reads are implemented a
 - `uv run pytest -q` — passed, 59 tests after profile-read implementation.
 - `uv build` — passed; the profile model, parser, repository, and service are present in the wheel.
 - One opt-in live parser check against `/dave/` was stopped by the existing challenge detector on an HTTP 200 challenge response; no bypass was attempted and offline acceptance remained green.
-- PR `#5` was reported clean with no required check runs, but the squash-merge request failed with HTTP 403 because the available GitHub token cannot merge pull requests.
+- PR `#5` was merged into `main` at `9ddd8cb` after the user completed the merge.
+- Temporary live validation returned and persisted 51 entries across two real diary pages using an automatically discarded SQLite database.
+- Temporary offline edge-case validation covered rated, unrated, sparse, liked, rewatch, review, empty, malformed, and repository round-trip behavior; the check file was deleted afterward.
+- A focused live selector check confirmed unliked and liked states as `False` and `True`, with ratings normalized to `3.0` and `4.5`.
+- `uv build` — passed; diary/film models, repositories, parser, and service are present in the wheel.
 
 ## Current limitations
 
-- Diary parsing/persistence, cache freshness, and MCP tools do not exist yet.
-- Profile reads always fetch until the dedicated cache/refresh feature is implemented.
+- Cache freshness and MCP tools do not exist yet.
+- Profile and diary reads always fetch until the dedicated cache/refresh feature is implemented.
 - The console command only confirms successful installation.
 
 ## Next implementation step
 
-Merge PR `#5`, synchronize local `main`, then implement diary reads on `feature/diary-read`.
+Deliver `feature/diary-read` through its pull request, then implement cache freshness and forced refresh on `feature/cache-refresh`.
